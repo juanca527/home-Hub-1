@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>HomeHub — Iniciar sesión</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="min-h-screen font-sans bg-gradient-to-b from-blue-50 to-white">
+  <div class="absolute inset-0 bg-cover bg-center blur-sm" id="bgIllustration"></div>
+  <div class="absolute inset-0 bg-black/40"></div>
+
+  <header class="fixed top-4 left-1/2 -translate-x-1/2 z-20">
+    <h1 class="text-white text-3xl font-bold drop-shadow-lg">HomeHub</h1>
+  </header>
+
+  <main class="min-h-screen flex items-center justify-center z-30 relative p-6">
+    <div class="w-full max-w-3xl grid grid-cols-1 md:grid-cols-2 gap-6">
+      <!-- Lado izquierdo (información) -->
+      <section class="hidden md:flex flex-col justify-center p-6 rounded-xl shadow-xl bg-white/60 backdrop-blur-md">
+        <h2 class="text-2xl font-semibold mb-2">Servicios de limpieza profesional</h2>
+        <p class="text-gray-700">Con HomeHub puedes solicitar aseo general, profundo, lavandería y más. Regístrate o inicia sesión para continuar.</p>
+        <ul class="mt-4 space-y-2 text-sm text-gray-700">
+          <li>✔ Personal verificado</li>
+          <li>✔ Reservas y chat en tiempo real</li>
+          <li>✔ Calificaciones y seguimiento</li>
+        </ul>
+      </section>
+
+      <!-- Lado derecho (formulario) -->
+      <section class="p-6 rounded-xl shadow-2xl bg-white">
+        <h2 class="text-xl font-semibold mb-4 text-center">Iniciar sesión</h2>
+        <form id="loginForm" class="space-y-3">
+          <input id="nameField" class="w-full p-3 border rounded hidden" placeholder="Nombre completo" />
+          <input id="emailField" type="email" class="w-full p-3 border rounded" placeholder="Correo electrónico" required />
+          <input id="passwordField" type="password" class="w-full p-3 border rounded" placeholder="Contraseña" required />
+          <div class="flex items-center gap-3">
+            <button type="submit" class="flex-1 py-3 rounded bg-gradient-to-r from-blue-500 to-green-400 text-white font-semibold shadow hover:scale-[1.01] transition">Entrar</button>
+            <button type="button" id="toggleMode" class="px-4 py-3 rounded border">Registrar</button>
+          </div>
+          <p id="modeNote" class="text-xs text-gray-500">¿No tienes cuenta? Pulsa <strong>Registrar</strong>.</p>
+        </form>
+        <div class="mt-4 text-center text-xs text-gray-500">Este prototipo guarda datos en <code>localStorage</code>.</div>
+      </section>
+    </div>
+  </main>
+
+  <script src="app.js"></script>
+  <script>
+    // Fondo SVG decorativo
+    const svg = encodeURIComponent(`
+      <svg width="1600" height="900" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="g" x1="0" x2="1">
+            <stop offset="0" stop-color="#7dd3fc"/>
+            <stop offset="1" stop-color="#60a5fa"/>
+          </linearGradient>
+          <filter id="f" x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur stdDeviation="20"/>
+          </filter>
+        </defs>
+        <rect width="100%" height="100%" fill="url(#g)"/>
+        <g transform="translate(200,120)" filter="url(#f)">
+          <g transform="scale(2)">
+            <rect x="0" y="0" width="220" height="140" rx="12" fill="#fff" opacity="0.06"/>
+            <circle cx="60" cy="50" r="28" fill="#fff" opacity="0.09"/>
+            <rect x="110" y="30" width="70" height="12" rx="6" fill="#fff" opacity="0.08"/>
+            <rect x="110" y="54" width="50" height="10" rx="5" fill="#fff" opacity="0.08"/>
+            <path d="M30 100 q30 -40 60 0" stroke="#fff" stroke-width="6" fill="none" opacity="0.06"/>
+          </g>
+        </g>
+      </svg>
+    `);
+    document.getElementById('bgIllustration').style.backgroundImage = `url("data:image/svg+xml,${svg}")`;
+  </script>
+</body>
+</html>

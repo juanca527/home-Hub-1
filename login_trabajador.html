@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>HomeHub — Acceso Trabajador</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="min-h-screen font-sans bg-gradient-to-b from-green-50 to-white">
+  <header class="fixed top-4 left-1/2 -translate-x-1/2 z-20">
+    <h1 class="text-green-600 text-3xl font-bold drop-shadow-lg">HomeHub Trabajadores</h1>
+  </header>
+
+  <main class="min-h-screen flex items-center justify-center relative p-6">
+    <section class="p-6 rounded-xl shadow-2xl bg-white w-full max-w-md">
+      <h2 class="text-xl font-semibold mb-4 text-center">Acceso Trabajadores</h2>
+      <form id="workerLoginForm" class="space-y-3">
+        <input id="workerNameField" type="text" class="w-full p-3 border rounded hidden" placeholder="Nombre completo" required />
+        <input id="emailField" type="email" class="w-full p-3 border rounded" placeholder="Correo electrónico" required />
+        <input id="passwordField" type="password" class="w-full p-3 border rounded" placeholder="Contraseña" required />
+        <div class="flex items-center gap-3">
+          <button type="submit" class="flex-1 py-3 rounded bg-gradient-to-r from-green-500 to-blue-400 text-white font-semibold shadow hover:scale-[1.01] transition">Entrar</button>
+          <button type="button" id="toggleWorkerMode" class="px-4 py-3 rounded border">Registrar</button>
+        </div>
+        <p id="workerModeNote" class="text-xs text-gray-500">¿No tienes cuenta? Pulsa <strong>Registrar</strong>.</p>
+      </form>
+      <div class="mt-4 text-center">
+        <a href="index.html" class="text-sm text-blue-600 hover:underline">Volver al inicio</a>
+      </div>
+      <div class="mt-4 text-center text-xs text-gray-500">Acceso exclusivo para personal de aseo.</div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', ()=>{
+      const form = document.getElementById('workerLoginForm');
+      const btnAlternar = document.getElementById('toggleWorkerMode');
+      const notaModo = document.getElementById('workerModeNote');
+      const campoNombre = document.getElementById('workerNameField');
+      
+      let modo = 'iniciar'; 
+
+      btnAlternar.addEventListener('click', ()=>{
+        modo = modo === 'iniciar' ? 'registrar' : 'iniciar';
+        btnAlternar.textContent = modo === 'iniciar' ? 'Registrar' : 'Iniciar';
+        notaModo.innerHTML = modo === 'iniciar' 
+          ? '¿No tienes cuenta? Pulsa <strong>Registrar</strong>.' 
+          : 'Completa tu nombre para registrarte.';
+        campoNombre.style.display = modo === 'iniciar' ? 'none' : 'block';
+      });
+
+      form.addEventListener('submit', (e)=>{
+        e.preventDefault();
+        const correo = document.getElementById('emailField').value.trim();
+        const clave = document.getElementById('passwordField').value.trim();
+        if (!correo || !clave) return alert('Completa correo y contraseña');
+
+        if (modo === 'registrar'){
+          const nombre = document.getElementById('workerNameField').value.trim(); 
+          if (!nombre) return alert('Ingresa tu nombre');
+          
+          const usuarios = JSON.parse(localStorage.getItem('hh_usuarios') || '[]');
+          if (usuarios.some(u => u.correo === correo)) 
+            return alert('El correo ya está registrado');
+          
+          const nuevo = { id: 'w' + Date.now(), nombre, correo, clave, rol: 'trabajador' };
+          usuarios.push(nuevo);
+          localStorage.setItem('hh_usuarios', JSON.stringify(users));
+          
+          // Guardar también en trabajadoras
+          const trabajadoras = JSON.parse(localStorage.getItem('hh_trabajadoras') || '[]');
+          trabajadoras.push({ id: nuevo.id, nombre: nuevo.nombre });
+          localStorage.setItem('hh_trabajadoras', JSON.stringify(trabajadoras));
+          
+          alert('Registro exitoso. Ahora inicia sesión.');
+          
+          // Cambiar a modo iniciar sesión
+          modo = 'iniciar'; 
+          btnAlternar.textContent = 'Registrar'; 
+          campoNombre.style.display = 'none';
+          campoNombre.value = '';
+        } else {
+          const usuarios = JSON.parse(localStorage.getItem('hh_usuarios') || '[]');
+          const trabajador = usuarios.find(u => u.correo === correo && u.clave === clave && u.rol === 'trabajador');
+          if (!trabajador) return alert('Credenciales inválidas o no eres trabajador');
+          localStorage.setItem('hh_usuarioActual', JSON.stringify(trabajador));
+          window.location.href = 'reservas.html';
+        }
+      });
+    });
+  </script>
+</body>
+</html>

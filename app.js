@@ -1,4 +1,3 @@
-// -------------------
 // Lógica compartida para el prototipo multi-página de HomeHub
 // -------------------
 const HH = (function(){
@@ -28,7 +27,7 @@ const HH = (function(){
   }
 
   function dbGuardar(clave, valor){ 
-    localStorage.setItem(clave, JSON.stringify(valor)); 
+   localStorage.setItem(clave, JSON.stringify(valor)); 
   }
 
   // Inicialización de tablas si no existen
@@ -48,13 +47,21 @@ const HH = (function(){
       return usuarios.find(u => u.correo === correo && u.clave === clave) || null;
     },
 
-    registrar: function(nombre, correo, clave){
+    registrar: function(nombre, correo, clave, rol = 'cliente'){
       const usuarios = dbObtener('hh_usuarios', []);
       if (usuarios.some(u => u.correo === correo)) 
         return { error: 'El correo ya está registrado' };
-      const nuevo = { nombre, correo, clave, rol: 'cliente' };
+      const nuevo = { id: rol === 'trabajador' ? 'w' + Date.now() : 'u' + Date.now(), nombre, correo, clave, rol };
       usuarios.push(nuevo); 
-      dbGuardar('hh_usuarios', usuarios); 
+      dbGuardar('hh_usuarios', usuarios);
+      
+      // Si es trabajador, agregar también a la lista de trabajadoras
+      if (rol === 'trabajador') {
+        const trabajadoras = dbObtener('hh_trabajadoras', []);
+        trabajadoras.push({ id: nuevo.id, nombre: nuevo.nombre });
+        dbGuardar('hh_trabajadoras', trabajadoras);
+      }
+      
       return { ok: true };
     },
 
@@ -78,10 +85,27 @@ const HH = (function(){
   // Módulo de interfaz
   // -------------------
   const Interfaz = {
-    mostrarServicios: function(contenedor){
+    mostrarServicios: function(contenedor, terminoBusqueda = '', categoriaFiltro = ''){
       const servicios = dbObtener('hh_servicios', SERVICIOS_POR_DEFECTO);
+      
+      // Filtrar servicios según búsqueda y categoría
+      const serviciosFiltrados = servicios.filter(s => {
+        const coincideNombre = s.nombre.toLowerCase().includes(terminoBusqueda.toLowerCase());
+        // Si no hay categoría seleccionada o si la categoría coincide
+        const categoriaServicio = this.obtenerCategoriaServicio(s);
+        const coincideCategoria = !categoriaFiltro || categoriaServicio === categoriaFiltro;
+        
+        return coincideNombre && coincideCategoria;
+      });
+      
       contenedor.innerHTML = '';
-      servicios.forEach(s => {
+      
+      if (serviciosFiltrados.length === 0) {
+        contenedor.innerHTML = '<div class="text-center py-8 text-gray-500">No se encontraron servicios que coincidan con tu búsqueda.</div>';
+        return;
+      }
+      
+      serviciosFiltrados.forEach(s => {
         const tarjeta = document.createElement('div');
         tarjeta.className = 'p-6 rounded-xl shadow hover:shadow-lg bg-white';
         tarjeta.innerHTML = `
@@ -129,8 +153,27 @@ const HH = (function(){
           alert('Reserva creada. Personal asignado: ' + asignada.nombre);
         });
 
+        // Botón de detalles
+        tarjeta.querySelector('.btn-detalles').addEventListener('click', ()=>{
+          alert(`Detalles del servicio:\n\n${s.nombre}\nPrecio: COP ${s.precio.toLocaleString()}\nTiempo aproximado: ${s.tiempoAprox}`);
+        });
+
         contenedor.appendChild(tarjeta);
       });
+    },
+    
+    // Función auxiliar para determinar la categoría de un servicio
+    obtenerCategoriaServicio: function(servicio) {
+      // Lógica simple para determinar categoría basada en el nombre
+      const nombre = servicio.nombre.toLowerCase();
+      if (nombre.includes('limpieza') || nombre.includes('aseo') || nombre.includes('lavado')) {
+        return 'limpieza';
+      } else if (nombre.includes('plomer') || nombre.includes('fontaner') || nombre.includes('cañer')) {
+        return 'plomeria';
+      } else if (nombre.includes('electric') || nombre.includes('luz') || nombre.includes('instalacion')) {
+        return 'electricidad';
+      }
+      return 'otros';
     },
 
     mostrarReservas: function(contenedor){
@@ -159,6 +202,8 @@ const HH = (function(){
             <div class="text-xs text-gray-600">${r.fecha} ${r.hora} • ${r.direccion}</div>
             <div class="text-xs text-gray-700 mt-1">Personal: ${r.trabajadora.nombre}</div>
             <div class="text-xs mt-1">Estado: <strong>${r.estado}</strong></div>
+            ${r.mensajes && r.mensajes.length > 0 ? 
+              `<div class="text-xs mt-1 text-blue-600">${r.mensajes.length} mensaje(s) en el chat</div>` : ''}
           </div>
           <div class="flex flex-col gap-2 items-end">
             <button class="chat-btn px-3 py-1 rounded border" data-id="${r.id}">Chat</button>
@@ -174,14 +219,67 @@ const HH = (function(){
       contenedor.querySelectorAll('.chat-btn').forEach(btn => 
         btn.addEventListener('click', (e)=>{ 
           const id = e.target.dataset.id; 
-          window.abrirChat(id); 
+          HH.abrirChat(id); 
         })
       );
 
       contenedor.querySelectorAll('.calificar-btn').forEach(btn => 
         btn.addEventListener('click', (e)=>{ 
           const id = e.target.dataset.id; 
-          window.abrirCalificacion(id); 
+          HH.abrirCalificacion(id); 
+        })
+      );
+    },
+    
+    // Función para mostrar reservas de trabajadores
+    mostrarReservasTrabajador: function(contenedor, trabajador){
+      const reservas = dbObtener('hh_reservas', []);
+      contenedor.innerHTML = '';
+
+      const asignadas = reservas.filter(r => r.trabajadora && r.trabajadora.id === trabajador.id);
+      if (asignadas.length === 0){ 
+        contenedor.innerHTML = '<div class="text-sm text-gray-500">No tienes reservas asignadas.</div>'; 
+        return; 
+      }
+
+      asignadas.forEach(r =>{
+        const servicio = dbObtener('hh_servicios').find(s => s.id === r.idServicio) || {nombre:'Servicio'};
+        const el = document.createElement('div');
+        el.className = 'p-4 bg-white rounded-lg shadow flex justify-between items-start';
+        el.innerHTML = `
+          <div>
+            <div class="font-semibold">${servicio.nombre}</div>
+            <div class="text-xs text-gray-600">${r.fecha} ${r.hora} • ${r.direccion}</div>
+            <div class="text-xs text-gray-700 mt-1">Cliente: ${r.correoUsuario}</div>
+            <div class="text-xs mt-1">Estado: <strong>${r.estado}</strong></div>
+            ${r.mensajes && r.mensajes.length > 0 ? 
+              `<div class="text-xs mt-1 text-blue-600">${r.mensajes.length} mensaje(s) en el chat</div>` : ''}
+          </div>
+          <div class="flex flex-col gap-2 items-end">
+            <button class="chat-btn px-3 py-1 rounded border" data-id="${r.id}">Chat</button>
+            ${r.estado === 'CREADA' 
+              ? `<button class="completar-btn px-3 py-1 rounded bg-green-500 text-white" data-id="${r.id}">Marcar completada</button>` 
+              : ''}
+          </div>
+        `;
+        contenedor.appendChild(el);
+      });
+
+      // Vincular botones
+      contenedor.querySelectorAll('.chat-btn').forEach(btn => 
+        btn.addEventListener('click', (e)=>{ 
+          const id = e.target.dataset.id; 
+          HH.abrirChat(id); 
+        })
+      );
+
+      contenedor.querySelectorAll('.completar-btn').forEach(btn => 
+        btn.addEventListener('click', (e)=>{ 
+          const id = e.target.dataset.id; 
+          if (confirm('¿Marcar esta reserva como completada?')) {
+            HH.marcarCompletada(id);
+            window.location.reload();
+          }
         })
       );
     }
@@ -214,14 +312,16 @@ const HH = (function(){
       r.mensajes.push(msg); 
       dbGuardar('hh_reservas', reservas);
 
-      // Simular respuesta automática
-      setTimeout(()=>{
-        const resp = { de: r.trabajadora.nombre, texto: '¡Entendido! Nos vemos el día del servicio.', ts: Date.now() };
-        r.mensajes.push(resp); 
-        dbGuardar('hh_reservas', reservas);
-        if (typeof window.chatActualizado === 'function') 
-          window.chatActualizado(r.mensajes);
-      }, 900);
+      // Simular respuesta automática solo si es un cliente enviando mensaje
+      if (actual.rol === 'cliente') {
+        setTimeout(()=>{
+          const resp = { de: r.trabajadora.nombre, texto: '¡Entendido! Nos vemos el día del servicio.', ts: Date.now() };
+          r.mensajes.push(resp); 
+          dbGuardar('hh_reservas', reservas);
+          if (typeof window.chatActualizado === 'function') 
+            window.chatActualizado(r.mensajes);
+        }, 900);
+      }
 
       if (typeof window.chatActualizado === 'function') 
         window.chatActualizado(r.mensajes);
@@ -305,7 +405,7 @@ if (location.pathname.endsWith('index.html') || location.pathname.endsWith('/'))
       } else {
         const usuario = HHAuth.iniciarSesion(correo, clave);
         if (!usuario) return alert('Credenciales inválidas');
-        HHAuth.guardarSesion({ nombre: usuario.nombre, correo: usuario.correo });
+        HHAuth.guardarSesion({ id: usuario.id, nombre: usuario.nombre, correo: usuario.correo, rol: usuario.rol });
         window.location.href = 'servicios.html';
       }
     });
@@ -320,6 +420,20 @@ if (location.pathname.endsWith('servicios.html')){
     if (!HHAuth.requerirSesion()) return;
     document.getElementById('userNameHeader').textContent = 'Hola, ' + HHAuth.usuarioActual().nombre;
     document.getElementById('logoutBtn').addEventListener('click', ()=> HHAuth.cerrarSesion());
+    
+    const grid = document.getElementById('servicesGrid');
+    HHUI.mostrarServicios(grid);
+
+    // Filtro y búsqueda
+    const searchInput = document.getElementById('searchService');
+    const filterSelect = document.getElementById('filterCategory');
+    
+    function actualizarServicios() {
+      HHUI.mostrarServicios(grid, searchInput.value, filterSelect.value);
+    }
+
+    searchInput.addEventListener('input', actualizarServicios);
+    filterSelect.addEventListener('change', actualizarServicios);
   });
 }
 
@@ -329,9 +443,20 @@ if (location.pathname.endsWith('servicios.html')){
 if (location.pathname.endsWith('reservas.html')){
   window.addEventListener('DOMContentLoaded', ()=>{
     if (!HHAuth.requerirSesion()) return;
-    document.getElementById('userNameHeader').textContent = 'Hola, ' + HHAuth.usuarioActual().nombre;
+    
+    const usuarioActual = HHAuth.usuarioActual();
+    document.getElementById('userNameHeader').textContent = 'Hola, ' + usuarioActual.nombre;
     document.getElementById('logoutBtn').addEventListener('click', ()=> HHAuth.cerrarSesion());
-    HHUI.mostrarReservas(document.getElementById('myBookings'));
+    
+    // Si es trabajador, mostrar reservas asignadas
+    if (usuarioActual.rol === 'trabajador') {
+      document.querySelector('h1').textContent = 'Reservas asignadas';
+      document.querySelector('p').textContent = 'Gestiona las reservas que te han sido asignadas.';
+      HHUI.mostrarReservasTrabajador(document.getElementById('myBookings'), usuarioActual);
+    } else {
+      // Si es cliente, mostrar sus reservas
+      HHUI.mostrarReservas(document.getElementById('myBookings'));
+    }
 
     // --- Chat modal ---
     const chatModal = document.getElementById('chatModal');
@@ -342,7 +467,7 @@ if (location.pathname.endsWith('reservas.html')){
     const cerrarChat = document.getElementById('closeChat');
 
     window.mostrarChatModal = function(reserva){
-      chatTitulo.textContent = `Chat con ${reserva.trabajadora.nombre} (Reserva ${reserva.id})`;
+      chatTitulo.textContent = `Chat con ${reserva.trabajadora ? reserva.trabajadora.nombre : 'cliente'} (Reserva ${reserva.id})`;
       chatModal.classList.remove('hidden');
       renderizarMensajes(reserva.mensajes);
       window.chatActualizado = function(mensajes){ renderizarMensajes(mensajes); };

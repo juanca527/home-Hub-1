@@ -51,25 +51,31 @@
   </div>
 
   <!-- Rating Modal -->
-  <div id="ratingModal" class="fixed inset-0 hidden items-center justify-center bg-black/50 z-50">
-    <div class="bg-white rounded-lg w-96 p-5 shadow-lg">
-      <h3 class="text-lg font-semibold mb-3">Calificar servicio</h3>
-      <select id="ratingSelect" class="p-2 border rounded w-full mb-3">
-        <option value="5">5 - Excelente</option>
-        <option value="4">4 - Muy bueno</option>
-        <option value="3">3 - Bueno</option>
-        <option value="2">2 - Regular</option>
-        <option value="1">1 - Malo</option>
-      </select>
-      <textarea id="ratingComment" class="w-full p-2 border rounded mb-3" placeholder="Comentario (opcional)"></textarea>
-      <div class="flex gap-3">
-        <button id="submitRating" class="flex-1 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition">Enviar</button>
-        <button id="closeRating" class="flex-1 px-4 py-2 border rounded hover:bg-gray-100 transition">Cerrar</button>
-      </div>
+<div id="ratingModal" class="fixed inset-0 hidden items-center justify-center bg-black/50 z-50">
+  <div class="bg-white rounded-lg w-96 p-5 shadow-lg">
+    <h3 class="text-lg font-semibold mb-3">Calificar servicio</h3>
+
+    <!-- Estrellas -->
+    <div id="starRating" class="flex gap-2 mb-3 text-2xl text-gray-400 cursor-pointer">
+      <span data-value="1">★</span>
+      <span data-value="2">★</span>
+      <span data-value="3">★</span>
+      <span data-value="4">★</span>
+      <span data-value="5">★</span>
+    </div>
+
+    <textarea id="ratingComment" class="w-full p-2 border rounded mb-3" placeholder="Comentario (opcional)"></textarea>
+    <div class="flex gap-3">
+      <button id="submitRating" class="flex-1 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition">Enviar</button>
+      <button id="closeRating" class="flex-1 px-4 py-2 border rounded hover:bg-gray-100 transition">Cerrar</button>
     </div>
   </div>
+</div>
 
-  <script src="app.js"></script>
+<script src="app.js"></script>
+
+
+
 </body>
 </html>
 

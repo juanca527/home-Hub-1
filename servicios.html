@@ -7,7 +7,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="style.css">
 </head>
-<body class="min-h-screen bg-gray-50 font-sans">
+<body class="min-h-screen bg-gray-50 font-sans flex flex-col">
   <!-- Navbar -->
   <nav class="bg-white shadow sticky top-0 z-30">
     <div class="max-w-6xl mx-auto flex items-center justify-between p-4">
@@ -18,29 +18,70 @@
       </div>
       <div class="flex items-center gap-3">
         <span id="userNameHeader" class="text-sm text-gray-700"></span>
-        <button id="logoutBtn" class="px-3 py-2 rounded bg-red-500 text-white">Cerrar sesión</button>
+        <button id="logoutBtn" class="px-3 py-2 rounded bg-red-500 text-white hover:bg-red-600">Cerrar sesión</button>
       </div>
     </div>
   </nav>
 
   <!-- Main -->
-  <main class="max-w-6xl mx-auto p-6">
+  <main class="flex-1 max-w-6xl mx-auto p-6">
     <header class="mb-6">
       <h1 class="text-3xl font-bold">Catálogo de servicios</h1>
       <p class="text-gray-600">Elige el servicio que necesitas y solicita una reserva.</p>
     </header>
 
+    <!-- Filtros -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+      <input id="searchService" type="text" placeholder="Buscar servicio..." 
+             class="w-full sm:w-1/2 px-4 py-2 border rounded-lg focus:ring focus:ring-blue-300">
+      <select id="filterCategory" class="px-4 py-2 border rounded-lg">
+        <option value="">Todas las categorías</option>
+        <option value="limpieza">Limpieza</option>
+        <option value="plomeria">Plomería</option>
+        <option value="electricidad">Electricidad</option>
+      </select>
+    </div>
+
     <section id="servicesGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"></section>
   </main>
 
+  <!-- Footer -->
+  <footer class="bg-gray-800 text-white p-6 mt-10">
+    <div class="max-w-6xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
+      <p>© 2025 HomeHub. Todos los derechos reservados.</p>
+      <div class="flex gap-4">
+        <a href="#" class="hover:text-blue-400">Facebook</a>
+        <a href="#" class="hover:text-blue-400">Instagram</a>
+        <a href="#" class="hover:text-blue-400">Twitter</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
   <script src="app.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       if (!HHAuth.requerirSesion()) return;
       document.getElementById('userNameHeader').textContent = 'Hola, ' + HHAuth.usuarioActual().nombre;
-      HHUI.mostrarServicios(document.getElementById('servicesGrid'));
-      document.getElementById('logoutBtn').addEventListener('click', () => { HHAuth.cerrarSesion(); });
+      
+      const grid = document.getElementById('servicesGrid');
+      HHUI.mostrarServicios(grid);
+
+      // Logout
+      document.getElementById('logoutBtn').addEventListener('click', () => HHAuth.cerrarSesion());
+
+      // Filtro y búsqueda
+      const searchInput = document.getElementById('searchService');
+      const filterSelect = document.getElementById('filterCategory');
+      
+      function actualizarServicios() {
+        HHUI.mostrarServicios(grid, searchInput.value, filterSelect.value);
+      }
+
+      searchInput.addEventListener('input', actualizarServicios);
+      filterSelect.addEventListener('change', actualizarServicios);
     });
   </script>
 </body>
 </html>
+
